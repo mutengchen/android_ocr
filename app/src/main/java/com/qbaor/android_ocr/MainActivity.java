@@ -12,6 +12,7 @@ import androidx.camera.view.PreviewView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -51,17 +52,28 @@ public class MainActivity extends AppCompatActivity {
     public static String local_data = "";
     public static String temp_folder = "";
     public static  String PATH  = "";
-    public static String[] lan ={"chi_sim","eng"};
+    public static String[] lan ={"eng"};
+
+    TessBaseAPI tessBaseAPI;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         img = findViewById(R.id.img);
+        img.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                img.setVisibility(View.GONE);
+            }
+        });
         PATH = getFilesDir().getAbsolutePath().toString();
         local_data =  PATH + "/tessdata/";
         Log.d(TAG, "onCreate: " + local_data);
         saveAssetDataToLocalFile();
-
+        tessBaseAPI = new TessBaseAPI();
+        tessBaseAPI.setDebug(false);
+        tessBaseAPI.init(PATH + File.separator, "eng");
+        tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO_OSD);
         PermissionUtil.requestRunTimePermission(this);
         initView();
         initData();
@@ -117,27 +129,24 @@ public class MainActivity extends AppCompatActivity {
     private String TAG = MainActivity.class.getSimpleName();
 
     private void startOcr(Bitmap bitmap) {
-        TessBaseAPI tessBaseAPI = new TessBaseAPI();
-        tessBaseAPI.setDebug(true);
-        tessBaseAPI.init(PATH + File.separator, "chi_sim+eng");
-        tessBaseAPI.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO_OSD);
+
         tessBaseAPI.setImage(bitmap);
         Log.d(TAG, "startOcr: ");
         //获取当前所有识别出来的words
         String result = tessBaseAPI.getUTF8Text();
         toast(result);
-        Log.d("startOcr", "OCR result: " + result);
+        System.out.println( "OCR result: " + result);
         //获取所有识别出来的区域
         Pixa area = tessBaseAPI.getRegions();
         for (Rect temp : area.getBoxRects()) {
-            Log.d(TAG, "box: " + temp.toShortString());
+            System.out.println("box: " + temp.toShortString());
         }
         showBox(bitmap,area,Color.RED);
         Pixa a = tessBaseAPI.getWords();
         for(Rect aa :a.getBoxRects())
-            Log.d(TAG, "word box: "+aa.toShortString());
-        showBox(bitmap,a,Color.GREEN);
-
+            System.out.println("word box: "+aa.toShortString());
+//        showBox(bitmap,a,Color.GREEN);/**/
+        img.setVisibility(View.VISIBLE);
         img.setImageBitmap(bitmap);
     }
     public void toast(String s){
